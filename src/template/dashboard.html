@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmSmart Dashboard - Plant Disease Classification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-green-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold">🌿 FarmSmart Dashboard</h1>
+                    <p class="text-green-100">Plant Disease Classification & Monitoring</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-green-100">Model Uptime</div>
+                    <div class="text-2xl font-bold" id="uptime">{{ "%.1f"|format(metrics.model_uptime) }} hrs</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- System Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                        <i class="fas fa-microchip text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">CPU Usage</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(metrics.cpu_usage) }}%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-memory text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Memory Usage</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(metrics.memory_usage) }}%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Active Connections</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ metrics.active_connections }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Model Uptime</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(metrics.model_uptime) }}h</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Prediction & Retraining -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Prediction Section -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-camera text-green-600 mr-2"></i>Predict Disease
+                    </h2>
+                    <form id="predict-form" class="space-y-4" enctype="multipart/form-data">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload Plant Image</label>
+                            <input type="file" name="image" accept="image/*" required 
+                                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                            <i class="fas fa-search mr-2"></i>Analyze Disease
+                        </button>
+                    </form>
+                    <div id="prediction-result" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+                        <h3 class="font-semibold text-gray-800 mb-2">Prediction Results:</h3>
+                        <div id="prediction-content"></div>
+                    </div>
+                </div>
+
+                <!-- Retraining Section -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-sync-alt text-blue-600 mr-2"></i>Retrain Model
+                    </h2>
+                    <form id="retrain-form" class="space-y-4" enctype="multipart/form-data">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-graduation-cap text-green-600 mr-1"></i>Training Data
+                                </label>
+                                <input type="file" name="train_data" accept=".zip,.tar,.gz" required 
+                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                <p class="text-xs text-gray-500 mt-1">Upload training images (ZIP/TAR format)</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-check-circle text-blue-600 mr-1"></i>Validation Data
+                                </label>
+                                <input type="file" name="val_data" accept=".zip,.tar,.gz" required 
+                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                <p class="text-xs text-gray-500 mt-1">Upload validation images (ZIP/TAR format)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-yellow-600 mt-0.5 mr-2"></i>
+                                <div class="text-sm text-yellow-800">
+                                    <p class="font-medium">Dataset Requirements:</p>
+                                    <ul class="list-disc list-inside mt-1 space-y-1">
+                                        <li>Training data: Images organized by class folders</li>
+                                        <li>Validation data: Same class structure as training</li>
+                                        <li>Supported formats: ZIP, TAR, GZ</li>
+                                        <li>Minimum: 50 images per class</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200">
+                            <i class="fas fa-cogs mr-2"></i>Start Model Retraining
+                        </button>
+                    </form>
+                    <div id="retrain-status" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+                        <h3 class="font-semibold text-gray-800 mb-2">Retraining Status:</h3>
+                        <div id="retrain-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Visualizations & History -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Data Visualizations -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                        <i class="fas fa-chart-bar text-purple-600 mr-2"></i>Data Analytics
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">Prediction Distribution</h3>
+                            <canvas id="classChart" width="400" height="200"></canvas>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">Daily Activity</h3>
+                            <canvas id="activityChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                    {% if visualization %}
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-4">System Overview</h3>
+                        <img src="data:image/png;base64,{{ visualization }}" alt="System Analytics" class="w-full rounded-lg shadow">
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Recent Predictions -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                            <i class="fas fa-history text-green-600 mr-2"></i>Recent Predictions
+                        </h2>
+                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                            {% for prediction in recent_predictions %}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ prediction.image_name[:20] }}...</p>
+                                    <p class="text-sm text-gray-600">{{ prediction.predicted_class }}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-green-600">{{ "%.1f"|format(prediction.confidence) }}%</p>
+                                    <p class="text-xs text-gray-500">{{ prediction.upload_time[:10] }}</p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 text-center py-4">No predictions yet</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Retraining History -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                            <i class="fas fa-cogs text-blue-600 mr-2"></i>Retraining History
+                        </h2>
+                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                            {% for retrain in retraining_history %}
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ retrain.dataset_name[:20] }}...</p>
+                                    <p class="text-sm text-gray-600">{{ retrain.status }}</p>
+                                </div>
+                                <div class="text-right">
+                                    {% if retrain.accuracy %}
+                                    <p class="font-bold text-blue-600">{{ "%.2f"|format(retrain.accuracy) }}</p>
+                                    {% endif %}
+                                    <p class="text-xs text-gray-500">{{ retrain.start_time[:10] }}</p>
+                                </div>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 text-center py-4">No retraining history</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Prediction form handling
+        document.getElementById('predict-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const resultDiv = document.getElementById('prediction-result');
+            const contentDiv = document.getElementById('prediction-content');
+            
+            resultDiv.classList.remove('hidden');
+            contentDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin text-green-600"></i> Analyzing...</div>';
+            
+            try {
+                const res = await fetch('/predict', { method: 'POST', body: form });
+                const data = await res.json();
+                
+                if (data.error) {
+                    contentDiv.innerHTML = `<div class="text-red-600">${data.error}</div>`;
+                } else {
+                    let html = '<div class="space-y-2">';
+                    data.forEach((pred, index) => {
+                        const color = index === 0 ? 'text-green-600 font-bold' : 'text-gray-600';
+                        html += `<div class="flex justify-between ${color}">
+                            <span>${pred.class}</span>
+                            <span>${pred.percent.toFixed(2)}%</span>
+                        </div>`;
+                    });
+                    html += '</div>';
+                    contentDiv.innerHTML = html;
+                }
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="text-red-600">Error: ' + error.message + '</div>';
+            }
+        };
+
+        // Retraining form handling
+        document.getElementById('retrain-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const statusDiv = document.getElementById('retrain-status');
+            const contentDiv = document.getElementById('retrain-content');
+            
+            // Validate that both files are uploaded
+            const trainFile = form.get('train_data');
+            const valFile = form.get('val_data');
+            
+            if (!trainFile || !valFile) {
+                contentDiv.innerHTML = '<div class="text-red-600">Please upload both training and validation data files.</div>';
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+            
+            statusDiv.classList.remove('hidden');
+            contentDiv.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-blue-600"></i> 
+                    <p class="mt-2">Processing uploaded datasets...</p>
+                    <p class="text-sm text-gray-600">Training: ${trainFile.name}</p>
+                    <p class="text-sm text-gray-600">Validation: ${valFile.name}</p>
+                </div>
+            `;
+            
+            try {
+                const res = await fetch('/retrain', { method: 'POST', body: form });
+                const data = await res.json();
+                
+                if (data.error) {
+                    contentDiv.innerHTML = `<div class="text-red-600">${data.error}</div>`;
+                } else {
+                    contentDiv.innerHTML = `
+                        <div class="text-green-600">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            ${data.message}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            <p>Training file: ${trainFile.name}</p>
+                            <p>Validation file: ${valFile.name}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                contentDiv.innerHTML = '<div class="text-red-600">Error: ' + error.message + '</div>';
+            }
+        };
+
+        // Auto-refresh uptime
+        setInterval(async function() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('uptime').textContent = data.model_uptime + ' hrs';
+            } catch (error) {
+                console.log('Failed to update uptime');
+            }
+        }, 30000); // Update every 30 seconds
+
+        // Initialize charts (placeholder data)
+        const ctx1 = document.getElementById('classChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Healthy', 'Early Blight', 'Late Blight', 'Rust'],
+                datasets: [{
+                    data: [30, 25, 20, 25],
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        const ctx2 = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Predictions',
+                    data: [12, 19, 15, 25, 22, 30, 28],
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
