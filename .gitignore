@@ -1,0 +1,38 @@
+# Python virtual environments
+venv/
+.venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode and PyCharm settings
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Model and data artifacts (optional, keep if not needed)
+*.h5
+*.pkl
+*.ckpt
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+*.bat
+*.ps1
+# Ignore test artifacts
+*.pytest_cache/
+
+# Ignore local data
+*.local/
