@@ -2,20 +2,20 @@
 
 FarmSmart is a comprehensive machine learning pipeline that helps identify plant diseases from leaf images using deep learning. It features a modern web dashboard with real-time monitoring, data visualizations, and automated retraining capabilities.
 
-## 🌟 Enhanced Features
+## Enhanced Features
 
-- ✅ **Advanced CNN Model** with regularization, callbacks, and transfer learning
-- ✅ **Real-time Dashboard** with system metrics and data visualizations
-- ✅ **SQLite Database** for tracking predictions and retraining history
-- ✅ **Interactive Charts** showing prediction distribution and system performance
-- ✅ **Model Uptime Monitoring** with CPU, memory, and connection tracking
-- ✅ **RESTful API** with comprehensive endpoints for prediction and retraining
-- ✅ **Automated Retraining Pipeline** with uploaded ZIP datasets
-- ✅ **Data Visualizations** with 4+ chart types and real-time updates
-- ✅ **Load Testing** with Locust for performance simulation
-- ✅ **Production-Ready** with Docker containerization support
+- **Advanced CNN Model** with regularization, callbacks, and transfer learning
+- **Real-time Dashboard** with system metrics and data visualizations
+- **SQLite Database** for tracking predictions and retraining history
+- **Interactive Charts** showing prediction distribution and system performance
+- **Model Uptime Monitoring** with CPU, memory, and connection tracking
+- **RESTful API** with comprehensive endpoints for prediction and retraining
+- **Automated Retraining Pipeline** with uploaded ZIP datasets
+- **Data Visualizations** with 4+ chart types and real-time updates
+- **Load Testing** with Locust for performance simulation
+- **Production-Ready** with Docker containerization support
 
-## 📊 Dashboard Features
+## Dashboard Features
 
 ### **Real-time Monitoring**
 - **System Metrics**: CPU usage, memory usage, active connections
@@ -35,36 +35,35 @@ FarmSmart is a comprehensive machine learning pipeline that helps identify plant
 - **Performance Analytics**: Historical data for trend analysis
 - **Export Capabilities**: JSON export for external analysis
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 farmsmart_mlop/
-├── README.md                    # Project documentation
-├── requirements.txt             # Python dependencies
-├── test_dashboard.py           # Test suite for dashboard
-├── locustfile.py               # Load testing configuration
+├── README.md                    
+├── requirements.txt            
+├── locustfile.py               
 ├── src/
-│   ├── app.py                  # Enhanced Flask dashboard
-│   ├── database.py             # SQLite database utilities
-│   ├── model.py                # CNN architecture and training
-│   ├── preprocessing.py        # Data preprocessing utilities
-│   ├── prediction.py           # Model prediction functions
-│   ├── retrain.py              # Model retraining pipeline
+│   ├── app.py                  
+│   ├── database.py             
+│   ├── model.py                
+│   ├── preprocessing.py        
+│   ├── prediction.py           
+│   ├── retrain.py              
 │   └── template/
-│       └── dashboard.html      # Modern dashboard UI
+│       └── dashboard.html     
 ├── models/
-│   ├── farmsmart_diseases.keras # Trained model
+│   ├── farmsmart_diseases.keras
 │   └── farmsmart_diseases_metadata.json
 ├── dataset/
-│   ├── train/                  # Training images
-│   ├── valid/                  # Validation images
-│   └── test/                   # Test images
+│   ├── train/                 
+│   ├── valid/                  
+│   └── test/                   
 ├── notebook/
-│   └── farmsmart.ipynb        # Complete ML pipeline notebook
-└── farmsmart.db               # SQLite database (auto-created)
+│   └── farmsmart.ipynb        
+└── farmsmart.db               
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### **1. Installation**
 ```bash
@@ -94,7 +93,7 @@ python src/app.py
 # Access at: http://localhost:5000
 ```
 
-## 📈 Dashboard Features
+## Dashboard Features
 
 ### **Prediction Interface**
 - Upload plant images for instant disease classification
@@ -112,7 +111,7 @@ python src/app.py
 - **2 History Panels**: Recent predictions and retraining history
 - **Real-time Updates**: Auto-refresh every 30 seconds
 
-## 🔧 API Endpoints
+## API Endpoints
 
 ### **Prediction**
 ```bash
@@ -136,7 +135,7 @@ GET /api/stats
 Response: JSON with system statistics and metrics
 ```
 
-## 📊 Model Performance
+## Model Performance
 
 | Metric        | Value |
 |---------------|-------|
@@ -146,7 +145,7 @@ Response: JSON with system statistics and metrics
 | **F1-Score**  | 84%+  |
 | **AUC-ROC**   | 0.92+ |
 
-## 🧪 Testing
+## Testing
 
 ### **Run Test Suite**
 ```bash
@@ -162,7 +161,7 @@ pip install locust
 locust -f locustfile.py --host=http://localhost:5000
 ```
 
-## 📊 Database Schema
+## Database Schema
 
 ### **Predictions Table**
 ```sql
@@ -202,29 +201,29 @@ CREATE TABLE system_metrics (
 );
 ```
 
-## 🎯 Assignment Requirements Fulfilled
+## Assignment Requirements Fulfilled
 
-### ✅ **Core Requirements**
-- **Data Acquisition**: Image dataset (non-tabular ✅)
+### **Core Requirements**
+- **Data Acquisition**: Image dataset (non-tabular )
 - **Data Processing**: Advanced preprocessing with augmentation
 - **Model Creation**: CNN with optimization techniques
 - **Model Testing**: Comprehensive prediction functions
 - **Model Retraining**: Automated pipeline with triggers
 - **API Creation**: RESTful endpoints with Flask
 
-### ✅ **UI Features**
+###  **UI Features**
 - **Model Uptime**: Real-time monitoring display
 - **Data Visualizations**: 4+ chart types with interpretations
 - **Upload Data**: Bulk image upload for predictions
 - **Trigger Retraining**: One-click retraining with ZIP uploads
 
-### ✅ **Advanced Features**
+### **Advanced Features**
 - **Database Integration**: SQLite with comprehensive tracking
 - **Real-time Analytics**: Live charts and metrics
 - **Performance Monitoring**: System resource tracking
 - **Historical Data**: Complete prediction and retraining logs
 
-## 🚀 Deployment
+## Deployment
 
 ### **Local Development**
 ```bash
@@ -245,13 +244,13 @@ docker run -p 5000:5000 farmsmart-dashboard
 - **Render**: Connect GitHub repository
 - **AWS/GCP**: Use provided Dockerfile
 
-## 📹 Video Demo
-🎥 [YouTube Demo Link](https://your-link.com) - Coming Soon
+## Video Demo
+ [YouTube Demo Link](https://your-link.com) - Coming Soon
 
-## 🌐 Live Deployment
-🔗 [Production URL](https://farmsmart-demo.com) - Coming Soon
+## Live Deployment
+ [Production URL](https://farmsmart-demo.com) - Coming Soon
 
-## 📋 Load Testing Results
+## Load Testing Results
 
 | Users | Response Time | Throughput | Error Rate |
 |-------|---------------|------------|------------|
@@ -259,45 +258,10 @@ docker run -p 5000:5000 farmsmart-dashboard
 | 10    | 180ms         | 55.6 req/s | 0%         |
 | 50    | 220ms         | 227.3 req/s| 0%         |
 
-## 👥 Contributors
-- **Your Name** – Full Stack ML Engineer
-- **Collaborators** – Frontend & DevOps
+## Contributors
+- **Afsa umutoniwase** – Repository owner.
 
-## 📄 License
+##  License
 MIT License © 2025 African Leadership University
 
 ---
-
-## 🎓 Grading Checklist
-
-### ✅ **Video Demo** (5/5 points)
-- [ ] Camera-on demonstration
-- [ ] Prediction process shown
-- [ ] Retraining process shown
-- [ ] UI features demonstrated
-
-### ✅ **Retraining Process** (10/10 points)
-- [ ] Data file uploading
-- [ ] Data preprocessing
-- [ ] Custom model retraining
-- [ ] Database integration
-
-### ✅ **Prediction Process** (10/10 points)
-- [ ] Image upload functionality
-- [ ] Correct prediction display
-- [ ] Confidence scores shown
-- [ ] Real-time results
-
-### ✅ **Evaluation of Models** (10/10 points)
-- [ ] Clear preprocessing steps
-- [ ] Optimization techniques
-- [ ] 4+ evaluation metrics
-- [ ] Comprehensive analysis
-
-### ✅ **Deployment Package** (10/10 points)
-- [ ] Web application UI
-- [ ] Data visualizations
-- [ ] System insights
-- [ ] Production ready
-
-**Total Expected Score: 45/45 points (Excellent)**
