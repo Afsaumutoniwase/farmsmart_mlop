@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FarmSmart</title>
+  <link rel="icon" href="/static/loader.png" type="image/x-icon">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="max-w-7xl mx-auto px-6 py-10">
+    <div class="text-center mb-10">
+      <img src="/static/loader.png" alt="FarmSmart Logo" class="mx-auto w-24 mb-4">
+      <h1 class="text-4xl font-bold text-green-700">FarmSmart Disease Classifier</h1>
+      <p class="text-gray-600 mt-2 max-w-2xl mx-auto">
+        At <strong>FarmSmart</strong>, we are dedicated to revolutionizing agriculture with technology and data-driven insights. 
+        This tool helps you detect plant diseases and retrain the model with your own crop images for improved accuracy.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Prediction Column -->
+      <div class="bg-teal-50 p-6 rounded shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Predict Plant Disease</h2>
+        <form id="predict-form" class="space-y-4">
+          <input type="file" name="image" required class="w-full border p-2 rounded" />
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Predict</button>
+        </form>
+        <div id="predict-result" class="mt-4 text-sm text-gray-700 whitespace-pre-line"></div>
+      </div>
+
+      <!-- Retraining Column -->
+      <div class="bg-green-50 p-6 rounded shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Retrain with Custom Images</h2>
+        <form id="retrain-form" class="space-y-4">
+          <input type="text" name="class_name" placeholder="New Class Name (e.g. Rust)" required class="w-full border p-2 rounded" />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="font-medium block mb-1">Training Images</label>
+              <input type="file" name="train_images" multiple required class="w-full border p-2 rounded" />
+            </div>
+
+            <div>
+              <label class="font-medium block mb-1">Validation Images</label>
+              <input type="file" name="valid_images" multiple required class="w-full border p-2 rounded" />
+            </div>
+          </div>
+
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Retrain</button>
+        </form>
+        <div id="retrain-result" class="mt-4 text-sm text-gray-700 whitespace-pre-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const predictForm = document.getElementById('predict-form');
+    const retrainForm = document.getElementById('retrain-form');
+    const predictResult = document.getElementById('predict-result');
+    const retrainResult = document.getElementById('retrain-result');
+
+    // Clear result and show "Predicting..." message
+    predictForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      predictResult.innerText = "Predicting... Please wait.";
+      
+      const form = e.target;
+      const data = new FormData(form);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: data });
+        const result = await res.json();
+
+        if (result.top_prediction) {
+          predictResult.innerText =
+            `Top Prediction:\n• Class: ${result.top_prediction.class}\n• Confidence: ${(result.top_prediction.confidence * 100).toFixed(2)}%`;
+        } else {
+          predictResult.innerText = "No prediction result.";
+        }
+      } catch (err) {
+        predictResult.innerText = "Error during prediction. Please try again.";
+      }
+
+      // Clear file input after prediction
+      form.querySelector('input[type="file"]').value = "";
+    });
+
+    // Show "Retraining..." message
+    retrainForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      retrainResult.innerText = "Retraining model... Please wait.";
+
+      const form = e.target;
+      const data = new FormData(form);
+
+      try {
+        const res = await fetch('/custom-retrain', { method: 'POST', body: data });
+        const result = await res.json();
+
+        retrainResult.innerText = result.message || JSON.stringify(result);
+      } catch (err) {
+        retrainResult.innerText = "Error during retraining. Please try again.";
+      }
+
+      // Reset input fields after retraining
+      form.reset();
+    });
+
+    // Optional: Clear prediction area when a new file is uploaded
+    predictForm.querySelector('input[type="file"]').addEventListener('change', () => {
+      predictResult.innerText = "";
+    });
+
+    // Optional: Clear retrain result when new files or class name entered
+    retrainForm.querySelectorAll('input').forEach(input => {
+      input.addEventListener('change', () => {
+        retrainResult.innerText = "";
+      });
+    });
+  </script>
+
+</body>
+</html>

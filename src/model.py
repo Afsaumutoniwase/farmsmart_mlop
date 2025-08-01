@@ -26,14 +26,14 @@ from .prediction import predict_image
 warnings.filterwarnings('ignore')
 
 class PlantDiseaseCNN:
-    def __init__(self, img_size=(128, 128), num_classes=15, model_type='custom'):
+    def __init__(self, img_size=(128, 128), num_classes=7, model_type='custom'):
         self.img_size = img_size
         self.num_classes = num_classes
         self.model_type = model_type
         self.model = None
         self.history = None
         self.class_names = []
-        
+    
     def get_data_generators(self, train_dir, valid_dir, batch_size=32):
         """Create ENHANCED data generators with comprehensive augmentation"""
         
@@ -590,86 +590,6 @@ class PlantDiseaseCNN:
         
         return results
     
-    def save_model(self, model_path='models/farmsmart_diseases.keras', 
-                   metadata_path='models/farmsmart_diseases_metadata.json'):
-        """Save the trained model with comprehensive metadata"""
-        if self.model is None:
-            raise ValueError("No model to save!")
-        
-        # Create models directory if it doesn't exist
-        os.makedirs(os.path.dirname(model_path), exist_ok=True)
-        
-        # Save the model
-        self.model.save(model_path)
-        
-        # Save comprehensive metadata
-        metadata = {
-            'model_info': {
-                'name': 'FarmSmart Disease Classifier',
-                'creation_date': datetime.now().isoformat(),
-                'framework': 'TensorFlow/Keras',
-                'version': tf.__version__
-            },
-            'architecture': {
-                'img_size': self.img_size,
-                'num_classes': self.num_classes,
-                'model_type': self.model_type,
-                'input_shape': list(self.img_size) + [3],
-                'total_parameters': int(self.model.count_params()),
-                'trainable_parameters': int(sum([tf.keras.backend.count_params(w) for w in self.model.trainable_weights])),
-                'layers': len(self.model.layers)
-            },
-            'training_config': {
-                'optimizer': 'Adam_AMSGrad',
-                'loss_function': 'categorical_crossentropy',
-                'metrics': ['accuracy', 'precision', 'recall', 'auc', 'top_3_accuracy'],
-                'regularization': 'L1_L2_Dropout_BatchNorm',
-                'data_augmentation': True
-            },
-            'dataset_info': {
-                'class_names': self.class_names,
-                'num_classes': len(self.class_names)
-            },
-            'optimization_techniques': {
-                'regularization': ['L1', 'L2', 'Dropout', 'BatchNormalization'],
-                'callbacks': ['EarlyStopping', 'ReduceLROnPlateau', 'ModelCheckpoint', 'LearningRateScheduler'],
-                'optimizer_features': ['AMSGrad', 'Custom_Beta_Params', 'Adaptive_LR'],
-                'data_augmentation': ['Rotation', 'Shift', 'Shear', 'Zoom', 'Flip', 'Brightness']
-            }
-        }
-        
-        with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2, default=str)
-        
-        print(f"MODEL SAVED SUCCESSFULLY!")
-        print(f"  Model file: {model_path}")
-        print(f"  Metadata: {metadata_path}")
-        print(f"  Total parameters: {metadata['architecture']['total_parameters']:,}")
-        
-        return model_path, metadata_path
-    
-    def load_model(self, model_path='models/farmsmart_diseases.keras', 
-                   metadata_path='models/farmsmart_diseases_metadata.json'):
-        """Load a trained model with metadata"""
-        # Load the model
-        self.model = tf.keras.models.load_model(model_path)
-        
-        # Load metadata
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
-        
-        self.img_size = tuple(metadata['architecture']['img_size'])
-        self.num_classes = metadata['architecture']['num_classes']
-        self.model_type = metadata['architecture']['model_type']
-        self.class_names = metadata['dataset_info']['class_names']
-        
-        print(f"MODEL LOADED SUCCESSFULLY!")
-        print(f"  Model: {metadata['model_info']['name']}")
-        print(f"  Created: {metadata['model_info']['creation_date']}")
-        print(f"  Classes: {len(self.class_names)}")
-        print(f"  Parameters: {metadata['architecture']['total_parameters']:,}")
-        
-        return self.model
 
 # Legacy functions for backward compatibility
 def get_vgg16_feature_extractor(img_size=(128, 128)):
@@ -718,7 +638,7 @@ if __name__ == "__main__":
     # Initialize model class
     cnn = PlantDiseaseCNN(
         img_size=(128, 128),
-        num_classes=15,  
+        num_classes=7,  
         model_type='custom' 
     )
 
@@ -744,12 +664,8 @@ if __name__ == "__main__":
     history = cnn.train(
         train_generator=train_generator,
         valid_generator=valid_generator,
-        epochs=5
+        epochs=10
     )
-
-    # Save trained model
-    print("\nSaving model and metadata...")
-    cnn.save_model()
 
     # Evaluate on validation set
     print("\nEvaluating trained model...")
@@ -772,10 +688,10 @@ if __name__ == "__main__":
 
 
     # Example prediction on one image after training
-    sample_image_path = "dataset/test/TomatoHealthy3.JPG"
+    sample_image_path = r"dataset\test\Tomato_healthy.JPG"
     if os.path.exists(sample_image_path):
         prediction_results = predict_image(
-            model_path='models/farmsmart_diseases.keras',
+            model_path='models/farmsmart.keras',
             class_names=cnn.class_names,
             image_path=sample_image_path,
             img_size=(128, 128),
