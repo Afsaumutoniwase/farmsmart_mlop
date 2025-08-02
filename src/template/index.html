@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FarmSmart</title>
+  <title>FarmSmart Dashboard</title>
   <link rel="icon" href="/static/loader.png" type="image/x-icon">
-
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
 </head>
 <body class="bg-gray-50 text-gray-800">
   <div class="max-w-7xl mx-auto px-6 py-10">
@@ -24,102 +24,280 @@
       <div class="bg-teal-50 p-6 rounded shadow-md">
         <h2 class="text-xl font-semibold mb-4">Predict Plant Disease</h2>
         <form id="predict-form" class="space-y-4">
-          <input type="file" name="image" required class="w-full border p-2 rounded" />
-          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Predict</button>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            <input type="file" name="image" id="image-input" accept="image/*" required 
+                   class="hidden" />
+            <label for="image-input" class="cursor-pointer">
+              <i data-feather="upload" class="w-8 h-8 mx-auto text-gray-400 mb-2"></i>
+              <p class="text-sm text-gray-600">Click to upload plant image</p>
+              <p class="text-xs text-gray-500 mt-1">Supports JPG, PNG, BMP</p>
+            </label>
+          </div>
+          <button type="submit" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i data-feather="search" class="w-4 h-4 inline mr-2"></i>
+            Predict Disease
+          </button>
         </form>
-        <div id="predict-result" class="mt-4 text-sm text-gray-700 whitespace-pre-line"></div>
+        <div id="predict-result" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+          <h3 class="font-semibold text-gray-800 mb-2">Prediction Results</h3>
+          <div id="prediction-content"></div>
+        </div>
       </div>
 
       <!-- Retraining Column -->
       <div class="bg-green-50 p-6 rounded shadow-md">
         <h2 class="text-xl font-semibold mb-4">Retrain with Custom Images</h2>
         <form id="retrain-form" class="space-y-4">
-          <input type="text" name="class_name" placeholder="New Class Name (e.g. Rust)" required class="w-full border p-2 rounded" />
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input type="text" name="class_name" placeholder="New Class Name (e.g. tomato_Rust)" 
+                 required class="w-full border border-gray-300 p-3 rounded-lg" />
+          
+          <div class="space-y-3">
             <div>
-              <label class="font-medium block mb-1">Training Images</label>
-              <input type="file" name="train_images" multiple required class="w-full border p-2 rounded" />
+              <label class="font-medium block mb-2 text-sm text-gray-700">Training Images (Select multiple images)</label>
+              <input type="file" name="train_images" multiple required 
+                     class="w-full border border-gray-300 p-2 rounded-lg" />
+              <p class="text-xs text-gray-500 mt-1">Upload 10+ images for training</p>
             </div>
-
             <div>
-              <label class="font-medium block mb-1">Validation Images</label>
-              <input type="file" name="valid_images" multiple required class="w-full border p-2 rounded" />
+              <label class="font-medium block mb-2 text-sm text-gray-700">Validation Images (Select multiple images)</label>
+              <input type="file" name="valid_images" multiple required 
+                     class="w-full border border-gray-300 p-2 rounded-lg" />
+              <p class="text-xs text-gray-500 mt-1">Upload 5+ images for validation</p>
             </div>
           </div>
 
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Retrain</button>
+          <button type="submit" class="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors">
+            <i data-feather="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+            Retrain Model
+          </button>
         </form>
-        <div id="retrain-result" class="mt-4 text-sm text-gray-700 whitespace-pre-line"></div>
+        <div id="retrain-result" class="mt-4 p-4 bg-gray-50 rounded-lg hidden">
+          <h3 class="font-semibold text-gray-800 mb-2">Retraining Status</h3>
+          <div id="retrain-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Information Section -->
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- System Information -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">System Information</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Model Status:</span>
+            <span class="font-semibold text-green-600">Active</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Supported Classes:</span>
+            <span class="font-semibold">7</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Image Format:</span>
+            <span class="font-semibold">JPG, PNG, BMP</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">Model Type:</span>
+            <span class="font-semibold">CNN</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Supported Classes -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">Supported Plant Diseases</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+            <span>Pepper Bacterial Spot</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+            <span>Pepper Healthy</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+            <span>Strawberry Healthy</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+            <span>Strawberry Leaf Scorch</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+            <span>Tomato Healthy</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+            <span>Tomato Late Blight</span>
+          </div>
+          <div class="flex items-center">
+            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+            <span>Tomato Target Spot</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold mb-4 text-gray-800">How to Use</h3>
+        <div class="space-y-2 text-sm text-gray-700">
+          <p>1. <strong>Upload Image:</strong> Click the upload area and select a plant image</p>
+          <p>2. <strong>Predict:</strong> Click "Predict Disease" to analyze the image</p>
+          <p>3. <strong>View Results:</strong> See the top prediction with confidence score</p>
+          <p>4. <strong>Retrain:</strong> Upload new images to improve the model</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retraining Instructions -->
+    <div class="mt-6 bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+      <h3 class="text-lg font-semibold mb-4 text-yellow-800">Retraining Instructions</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-yellow-700">
+        <div>
+          <p><strong>For Training:</strong> Select 10+ images of the same disease/plant type</p>
+          <p><strong>For Validation:</strong> Select 5+ different images of the same disease/plant type</p>
+        </div>
+        <div>
+          <p><strong>Class Name:</strong> Enter a descriptive name (e.g., "Tomato_New_Disease")</p>
+          <p><strong>Note:</strong> Images will be automatically organized into folders</p>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    const predictForm = document.getElementById('predict-form');
-    const retrainForm = document.getElementById('retrain-form');
-    const predictResult = document.getElementById('predict-result');
-    const retrainResult = document.getElementById('retrain-result');
+    // Initialize Feather icons
+    feather.replace();
 
-    // Clear result and show "Predicting..." message
-    predictForm.addEventListener('submit', async (e) => {
+    // Prediction form handler
+    document.getElementById('predict-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      predictResult.innerText = "Predicting... Please wait.";
-      
       const form = e.target;
       const data = new FormData(form);
+      const resultDiv = document.getElementById('predict-result');
+      const contentDiv = document.getElementById('prediction-content');
+
+      resultDiv.classList.remove('hidden');
+      contentDiv.innerHTML = '<div class="text-center"><i data-feather="loader" class="w-6 h-6 animate-spin mx-auto"></i><p class="text-sm mt-2">Analyzing image...</p></div>';
+      feather.replace();
 
       try {
-        const res = await fetch('/predict', { method: 'POST', body: data });
-        const result = await res.json();
+        const response = await fetch('/predict', { method: 'POST', body: data });
+        const result = await response.json();
 
         if (result.top_prediction) {
-          predictResult.innerText =
-            `Top Prediction:\n• Class: ${result.top_prediction.class}\n• Confidence: ${(result.top_prediction.confidence * 100).toFixed(2)}%`;
+          const prediction = result.top_prediction;
+          const confidence = (prediction.confidence * 100).toFixed(1);
+          
+          contentDiv.innerHTML = `
+            <div class="space-y-4">
+              <div class="text-center">
+                <h4 class="text-lg font-semibold text-gray-800">Top Prediction</h4>
+                <p class="text-2xl font-bold text-blue-600 mt-2">${prediction.class}</p>
+                <p class="text-sm text-gray-600 mt-1">Confidence: ${confidence}%</p>
+              </div>
+              
+              <div class="bg-blue-50 p-3 rounded border border-blue-200">
+                <p class="text-sm text-blue-800">
+                  <strong>Interpretation:</strong> This image shows ${prediction.class.toLowerCase()}. 
+                  The model is ${confidence}% confident in this prediction.
+                </p>
+              </div>
+            </div>
+          `;
         } else {
-          predictResult.innerText = "No prediction result.";
+          contentDiv.innerHTML = '<p class="text-red-600 text-center">No prediction result.</p>';
         }
-      } catch (err) {
-        predictResult.innerText = "Error during prediction. Please try again.";
+      } catch (error) {
+        contentDiv.innerHTML = '<p class="text-red-600 text-center">Error during prediction. Please try again.</p>';
       }
-
-      // Clear file input after prediction
-      form.querySelector('input[type="file"]').value = "";
     });
 
-    // Show "Retraining..." message
-    retrainForm.addEventListener('submit', async (e) => {
+    // Retraining form handler
+    document.getElementById('retrain-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      retrainResult.innerText = "Retraining model... Please wait.";
-
       const form = e.target;
       const data = new FormData(form);
+      const resultDiv = document.getElementById('retrain-result');
+      const contentDiv = document.getElementById('retrain-content');
+
+      resultDiv.classList.remove('hidden');
+      contentDiv.innerHTML = '<div class="text-center"><i data-feather="loader" class="w-6 h-6 animate-spin mx-auto"></i><p class="text-sm mt-2">Retraining model...</p></div>';
+      feather.replace();
 
       try {
-        const res = await fetch('/custom-retrain', { method: 'POST', body: data });
-        const result = await res.json();
+        const response = await fetch('/custom-retrain', { method: 'POST', body: data });
+        const result = await response.json();
 
-        retrainResult.innerText = result.message || JSON.stringify(result);
-      } catch (err) {
-        retrainResult.innerText = "Error during retraining. Please try again.";
+        contentDiv.innerHTML = `
+          <div class="p-3 bg-green-50 rounded border border-green-200">
+            <p class="text-green-800 font-medium">${result.message || 'Retraining completed successfully!'}</p>
+          </div>
+        `;
+      } catch (error) {
+        contentDiv.innerHTML = `
+          <div class="p-3 bg-red-50 rounded border border-red-200">
+            <p class="text-red-800">Error during retraining. Please try again.</p>
+          </div>
+        `;
       }
 
-      // Reset input fields after retraining
       form.reset();
     });
 
-    // Optional: Clear prediction area when a new file is uploaded
-    predictForm.querySelector('input[type="file"]').addEventListener('change', () => {
-      predictResult.innerText = "";
+    // File input styling
+    document.getElementById('image-input').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const label = document.querySelector('label[for="image-input"]');
+        label.innerHTML = `
+          <i data-feather="check-circle" class="w-8 h-8 mx-auto text-green-500 mb-2"></i>
+          <p class="text-sm text-gray-600">${file.name}</p>
+          <p class="text-xs text-gray-500 mt-1">Ready to predict</p>
+        `;
+        feather.replace();
+      }
     });
 
-    // Optional: Clear retrain result when new files or class name entered
-    retrainForm.querySelectorAll('input').forEach(input => {
-      input.addEventListener('change', () => {
-        retrainResult.innerText = "";
+    // Clear form data when user clicks upload area (PREDICTION ONLY)
+    document.querySelector('label[for="image-input"]').addEventListener('click', function(e) {
+      // Clear any previous results
+      const resultDiv = document.getElementById('predict-result');
+      resultDiv.classList.add('hidden');
+      
+      // Reset the label to default state
+      const label = document.querySelector('label[for="image-input"]');
+      label.innerHTML = `
+        <i data-feather="upload" class="w-8 h-8 mx-auto text-gray-400 mb-2"></i>
+        <p class="text-sm text-gray-600">Click to upload plant image</p>
+        <p class="text-xs text-gray-500 mt-1">Supports JPG, PNG, BMP</p>
+      `;
+      feather.replace();
+    });
+
+    // Add visual feedback for retraining file inputs (NO CLEARING)
+    document.querySelectorAll('input[name="train_images"], input[name="valid_images"]').forEach(function(input) {
+      input.addEventListener('change', function(e) {
+        const files = e.target.files;
+        if (files.length > 0) {
+          // Show selected file count
+          const fileCount = files.length;
+          const label = input.previousElementSibling;
+          if (label && label.tagName === 'LABEL') {
+            // Get the original label text without any previous count
+            const originalText = label.querySelector('.font-medium') ? 
+              label.querySelector('.font-medium').textContent : 
+              label.textContent.replace(/✓ \d+ image\(s\) selected/, '').trim();
+            
+            label.innerHTML = `
+              <span class="font-medium block mb-2 text-sm text-gray-700">${originalText}</span>
+              <span class="text-xs text-green-600">✓ ${fileCount} image(s) selected</span>
+            `;
+          }
+        }
       });
     });
   </script>
-
 </body>
 </html>

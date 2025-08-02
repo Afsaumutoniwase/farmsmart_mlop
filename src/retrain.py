@@ -1,6 +1,6 @@
 
 
-# === Enhanced Retraining Module with Separate Training/Validation ===
+# === Enhanced Retraining Module with Individual Image Upload ===
 import os
 import zipfile
 import tarfile
@@ -10,6 +10,7 @@ from datetime import datetime
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+from werkzeug.utils import secure_filename
 
 def extract_archive(archive_path, extract_to):
     """Extract ZIP, TAR, or GZ files"""
@@ -42,69 +43,76 @@ def validate_dataset_structure(data_path):
                  if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
         total_images += len(images)
         
-        if len(images) < 10:  # Minimum 10 images per class
-            return False, f"Class '{class_folder}' has only {len(images)} images (minimum 10 required)"
+        if len(images) < 5:  # Minimum 5 images per class
+            return False, f"Class '{class_folder}' has only {len(images)} images (minimum 5 required)"
     
-    if total_images < 50:  # Minimum 50 total images
-        return False, f"Total images ({total_images}) is below minimum requirement (50)"
+    if total_images < 15:  # Minimum 15 total images
+        return False, f"Total images ({total_images}) is below minimum requirement (15)"
     
     return True, f"Valid dataset with {len(class_folders)} classes and {total_images} images"
 
-def retrain_model_with_separate_data(train_path, val_path):
-    """Retrain model with separate training and validation datasets"""
+def organize_uploaded_images(train_files, valid_files, class_name):
+    """Organize uploaded individual images into proper folder structure"""
+    print(f"Organizing uploaded images for class: {class_name}")
     
-    print(f"🔄 Starting retraining with separate datasets...")
-    print(f"  Training data: {train_path}")
-    print(f"  Validation data: {val_path}")
+    # Create directories
+    train_dir = os.path.join("data/custom/train", class_name)
+    valid_dir = os.path.join("data/custom/valid", class_name)
+    os.makedirs(train_dir, exist_ok=True)
+    os.makedirs(valid_dir, exist_ok=True)
     
-    # Create temporary directories for extraction
-    with tempfile.TemporaryDirectory() as temp_dir:
-        train_extract = os.path.join(temp_dir, "train")
-        val_extract = os.path.join(temp_dir, "val")
-        os.makedirs(train_extract, exist_ok=True)
-        os.makedirs(val_extract, exist_ok=True)
+    # Save training images
+    train_count = 0
+    for file in train_files:
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(train_dir, filename)
+            file.save(file_path)
+            train_count += 1
+    
+    # Save validation images
+    valid_count = 0
+    for file in valid_files:
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(valid_dir, filename)
+            file.save(file_path)
+            valid_count += 1
+    
+    print(f"Organized {train_count} training images and {valid_count} validation images")
+    return train_dir, valid_dir
+
+def retrain_model_with_individual_images(train_files, valid_files, class_name):
+    """Retrain model with individually uploaded images"""
+    
+    print(f"Starting retraining with individual images for class: {class_name}")
+    
+    try:
+        # Organize uploaded images into folders
+        train_dir, valid_dir = organize_uploaded_images(train_files, valid_files, class_name)
         
-        # Extract training data
-        print("📦 Extracting training data...")
-        extract_archive(train_path, train_extract)
-        
-        # Extract validation data
-        print("📦 Extracting validation data...")
-        extract_archive(val_path, val_extract)
-        
-        # Validate both datasets
-        print("🔍 Validating training dataset...")
-        train_valid, train_msg = validate_dataset_structure(train_extract)
+        # Validate the organized dataset
+        print("Validating organized dataset...")
+        train_valid, train_msg = validate_dataset_structure("data/custom/train")
         if not train_valid:
             raise ValueError(f"Training dataset validation failed: {train_msg}")
         
-        print("🔍 Validating validation dataset...")
-        val_valid, val_msg = validate_dataset_structure(val_extract)
-        if not val_valid:
-            raise ValueError(f"Validation dataset validation failed: {val_msg}")
+        valid_valid, valid_msg = validate_dataset_structure("data/custom/valid")
+        if not valid_valid:
+            raise ValueError(f"Validation dataset validation failed: {valid_msg}")
         
-        # Check if both datasets have same classes
-        train_classes = set(os.listdir(train_extract))
-        val_classes = set(os.listdir(val_extract))
-        
-        if train_classes != val_classes:
-            missing_in_val = train_classes - val_classes
-            missing_in_train = val_classes - train_classes
-            raise ValueError(f"Class mismatch: Training has {train_classes}, Validation has {val_classes}")
-        
-        print(f"✅ Both datasets validated successfully!")
-        print(f"  Classes: {sorted(train_classes)}")
+        print("Dataset validation successful!")
         
         # Load existing model
-        model_path = "models/farmsmart_diseases.keras"
+        model_path = "models/farmsmart.keras"
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model not found at {model_path}")
         
-        print("🤖 Loading existing model...")
+        print("Loading existing model...")
         model = tf.keras.models.load_model(model_path)
         
         # Prepare data generators
-        print("📊 Setting up data generators...")
+        print("Setting up data generators...")
         train_datagen = ImageDataGenerator(
             rescale=1./255,
             rotation_range=20,
@@ -120,7 +128,7 @@ def retrain_model_with_separate_data(train_path, val_path):
         
         # Create generators
         train_generator = train_datagen.flow_from_directory(
-            train_extract,
+            "data/custom/train",
             target_size=(224, 224),
             batch_size=32,
             class_mode='categorical',
@@ -128,19 +136,19 @@ def retrain_model_with_separate_data(train_path, val_path):
         )
         
         val_generator = val_datagen.flow_from_directory(
-            val_extract,
+            "data/custom/valid",
             target_size=(224, 224),
             batch_size=32,
             class_mode='categorical',
             shuffle=False
         )
         
-        print(f"📈 Training samples: {train_generator.samples}")
-        print(f"📈 Validation samples: {val_generator.samples}")
+        print(f"Training samples: {train_generator.samples}")
+        print(f"Validation samples: {val_generator.samples}")
         
         # Compile model for retraining
         model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),  # Lower LR for fine-tuning
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
             loss='categorical_crossentropy',
             metrics=['accuracy', 'precision', 'recall']
         )
@@ -160,7 +168,7 @@ def retrain_model_with_separate_data(train_path, val_path):
                 verbose=1
             ),
             tf.keras.callbacks.ModelCheckpoint(
-                filepath='models/farmsmart_diseases_retrained.keras',
+                filepath='models/farmsmart_retrained.keras',
                 monitor='val_accuracy',
                 save_best_only=True,
                 verbose=1
@@ -168,32 +176,32 @@ def retrain_model_with_separate_data(train_path, val_path):
         ]
         
         # Retrain the model
-        print("🚀 Starting model retraining...")
+        print("Starting model retraining...")
         history = model.fit(
             train_generator,
-            epochs=10,  # Fewer epochs for retraining
+            epochs=10,
             validation_data=val_generator,
             callbacks=callbacks,
             verbose=1
         )
         
         # Evaluate the retrained model
-        print("📊 Evaluating retrained model...")
+        print("Evaluating retrained model...")
         val_loss, val_accuracy, val_precision, val_recall = model.evaluate(val_generator, verbose=0)
         
         # Save the retrained model
-        final_model_path = 'models/farmsmart_diseases_retrained.keras'
+        final_model_path = 'models/farmsmart_retrained.keras'
         model.save(final_model_path)
         
         # Create backup of original model
-        backup_path = f'models/farmsmart_diseases_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.keras'
+        backup_path = f'models/farmsmart_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.keras'
         if os.path.exists(model_path):
             shutil.copy2(model_path, backup_path)
         
         # Replace original model with retrained version
         shutil.move(final_model_path, model_path)
         
-        print(f"✅ Retraining completed successfully!")
+        print(f"Retraining completed successfully!")
         print(f"  Final validation accuracy: {val_accuracy:.4f}")
         print(f"  Final validation precision: {val_precision:.4f}")
         print(f"  Final validation recall: {val_recall:.4f}")
@@ -201,7 +209,11 @@ def retrain_model_with_separate_data(train_path, val_path):
         print(f"  Original model backed up to: {backup_path}")
         
         return f"Model retrained successfully! Validation accuracy: {val_accuracy:.2%}"
+        
+    except Exception as e:
+        print(f"Retraining failed: {str(e)}")
+        raise e
 
 def retrain_model(zip_path):
     """Legacy function for backward compatibility"""
-    return retrain_model_with_separate_data(zip_path, zip_path)
+    return retrain_model_with_individual_images(zip_path, zip_path, "default_class")
