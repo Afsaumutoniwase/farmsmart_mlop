@@ -183,10 +183,12 @@ Evaluates using:
 
 # Video Demo
 
- [YouTube Demo Link](https://your-demo-link.com)  
+ [YouTube Demo Link](https://www.youtube.com/watch?v=2oB6iRo4WbA)  
 _(Includes both prediction and retraining demonstration)_
 
+# Deployed UI
 
+ [Farmsmart Diseases Classifier](https://farmsmart-mlop.onrender.com)
 
 # Load Testing with Locust
 To simulate multiple users interacting with the system and monitor performance under load, Locust was used.
