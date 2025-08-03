@@ -8,9 +8,10 @@ from retrain import retrain_model_with_individual_images
 
 app = Flask(__name__, template_folder="template", static_folder="static")
 
-UPLOAD_FOLDER = "data/uploads"
+UPLOAD_FOLDER = "dataset/uploads"
 RETRAIN_FOLDER = "retrain_uploads"
-MODEL_PATH = "models/farmsmart.keras"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "farmsmart.keras")
 
 CLASS_NAMES = [
     'Pepper_bell_Bacterial_spot',

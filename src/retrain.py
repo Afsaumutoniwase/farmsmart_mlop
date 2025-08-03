@@ -12,6 +12,9 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 from werkzeug.utils import secure_filename
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "models"))
+model_path = os.path.join(MODEL_DIR, "farmsmart.keras")
 def extract_archive(archive_path, extract_to):
     """Extract ZIP, TAR, or GZ files"""
     if archive_path.endswith('.zip'):
@@ -104,7 +107,6 @@ def retrain_model_with_individual_images(train_files, valid_files, class_name):
         print("Dataset validation successful!")
         
         # Load existing model
-        model_path = "models/farmsmart.keras"
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model not found at {model_path}")
         
@@ -168,7 +170,7 @@ def retrain_model_with_individual_images(train_files, valid_files, class_name):
                 verbose=1
             ),
             tf.keras.callbacks.ModelCheckpoint(
-                filepath='models/farmsmart_retrained.keras',
+                filepath='../models/farmsmart_retrained.keras',
                 monitor='val_accuracy',
                 save_best_only=True,
                 verbose=1
@@ -190,11 +192,11 @@ def retrain_model_with_individual_images(train_files, valid_files, class_name):
         val_loss, val_accuracy, val_precision, val_recall = model.evaluate(val_generator, verbose=0)
         
         # Save the retrained model
-        final_model_path = 'models/farmsmart_retrained.keras'
+        final_model_path = '../models/farmsmart_retrained.keras'
         model.save(final_model_path)
         
         # Create backup of original model
-        backup_path = f'models/farmsmart_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.keras'
+        backup_path = f'../models/farmsmart_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.keras'
         if os.path.exists(model_path):
             shutil.copy2(model_path, backup_path)
         

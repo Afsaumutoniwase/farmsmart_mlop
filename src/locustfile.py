@@ -1,202 +1,115 @@
-#!/usr/bin/env python3
-"""
-FarmSmart ML Pipeline - Load Testing with Locust
-Simulates realistic user behavior for performance testing
-"""
+# src/locustfile.py
 
-from locust import HttpUser, task, between, events
+from locust import HttpUser, task, between
 import os
 import random
-import time
 from pathlib import Path
 
 class FarmSmartUser(HttpUser):
-    """Simulates a user interacting with FarmSmart application"""
-    
-    wait_time = between(2, 8)  # Realistic wait time between requests
-    
+    wait_time = between(2, 5)
+
     def on_start(self):
-        """Initialize user session"""
-        print(f"FarmSmart Load Test User Started")
+        """Load test images from dataset/test and dataset/valid."""
         
-        # Find available test images
-        self.test_images = self._find_test_images()
-        if self.test_images:
-            print(f"Found {len(self.test_images)} test images")
-        else:
-            print("No test images found - prediction tests will be skipped")
-    
-    def _find_test_images(self):
-        """Find available test images in the dataset"""
-        test_dirs = [
-            "dataset/test",
-            "data/uploads", 
-            "dataset/valid"
-        ]
-        
+        self.test_images = self._find_images("../dataset/retrain/train")
+        self.valid_images = self._find_images("../dataset/retrain/valid")
+
+
+    def _find_images(self, directory):
+        if not os.path.exists(directory):
+            return []
+
+        extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
         images = []
-        for test_dir in test_dirs:
-            if os.path.exists(test_dir):
-                for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
-                    images.extend(Path(test_dir).glob(ext))
-        
-        return images[:10]  # Limit to 10 images for testing
+        for ext in extensions:
+            images.extend(Path(directory).rglob(ext))  # Use rglob instead of glob
+        return list(images)
     
-    @task(5)
+    def _group_images_by_class(self, directory):
+        """Group images by class folder (e.g. retrain/train/class_x/*.jpg)."""
+        class_map = {}
+        root = Path(directory)
+        if not root.exists():
+            return class_map
+
+        for class_dir in root.iterdir():
+            if class_dir.is_dir():
+                images = []
+                for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']:
+                    images.extend(class_dir.glob(ext))
+                if images:
+                    class_map[class_dir.name] = images
+        return class_map
+
+
+
+    @task(1)
     def visit_homepage(self):
-        """Simulate users visiting the homepage"""
+        """Simulate visiting the homepage."""
         with self.client.get("/", catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
             else:
                 response.failure(f"Homepage failed: {response.status_code}")
-    
+
     @task(3)
     def predict_image(self):
-        """Simulate image prediction requests"""
+        """Simulate image prediction (1 image only)"""
         if not self.test_images:
-            # Skip if no test images available
             return
-        
-        # Select a random test image
+
         image_path = random.choice(self.test_images)
-        
-        try:
-            with open(image_path, 'rb') as img:
-                files = {'image': (image_path.name, img, 'image/jpeg')}
-                
-                with self.client.post("/predict", files=files, catch_response=True) as response:
-                    if response.status_code == 200:
-                        result = response.json()
-                        if 'top_prediction' in result:
-                            prediction = result['top_prediction']
-                            print(f"Prediction: {prediction.get('class', 'Unknown')} "
-                                  f"({prediction.get('confidence', 0):.2%})")
-                            response.success()
-                        else:
-                            response.failure("No prediction result")
-                    else:
-                        response.failure(f"Prediction failed: {response.status_code}")
-                        
-        except Exception as e:
-            print(f"Prediction error: {e}")
-    
-    @task(1)
-    def test_retraining(self):
-        """Simulate retraining requests (less frequent)"""
-        # Create a simple test dataset for retraining
-        test_class_name = f"test_class_{int(time.time())}"
-        
-        # Simulate retraining with minimal data
-        data = {
-            'class_name': test_class_name
-        }
-        
-        # Create dummy files for testing
-        dummy_files = []
-        for i in range(3):  # Minimal test files
-            dummy_files.append(('train_images', (f'train_{i}.jpg', b'dummy_image_data', 'image/jpeg')))
-            dummy_files.append(('valid_images', (f'valid_{i}.jpg', b'dummy_image_data', 'image/jpeg')))
-        
-        try:
-            with self.client.post("/custom-retrain", data=data, files=dummy_files, catch_response=True) as response:
-                if response.status_code == 200:
+        mime_type = 'image/png' if image_path.suffix.lower() == '.png' else 'image/jpeg'
+
+        with open(image_path, 'rb') as img:
+            files = {'image': (image_path.name, img, mime_type)}
+            with self.client.post("/predict", files=files, catch_response=True) as response:
+                try:
                     result = response.json()
-                    if 'message' in result:
-                        print(f"Retraining initiated: {result['message']}")
+                    if response.status_code == 200 and "top_prediction" in result:
                         response.success()
                     else:
-                        response.failure("No retraining message")
-                else:
-                    response.failure(f"Retraining failed: {response.status_code}")
-                    
-        except Exception as e:
-            print(f"Retraining error: {e}")
-    
+                        response.failure("Prediction failed or missing result")
+                except Exception as e:
+                    response.failure(f"Invalid JSON response: {e}")
+
     @task(2)
-    def test_static_files(self):
-        """Test static file serving performance"""
-        static_files = [
-            "/static/logo.png",
-            "/static/loader.png"
-        ]
-        
-        file_path = random.choice(static_files)
-        
-        with self.client.get(file_path, catch_response=True) as response:
-            if response.status_code == 200:
-                response.success()
-            else:
-                response.failure(f"Static file failed: {response.status_code}")
+    def retrain_model(self):
+        """Simulate retraining using 5+ train and 5+ valid images from a single class."""
+        train_class_map = self._group_images_by_class("../dataset/retrain/train")
+        valid_class_map = self._group_images_by_class("../dataset/retrain/valid")
 
-class FarmSmartAdminUser(HttpUser):
-    """Simulates admin user with different behavior patterns"""
-    
-    wait_time = between(5, 15)  # Longer wait times for admin users
-    
-    @task(1)
-    def check_system_status(self):
-        """Admin checks system status"""
-        with self.client.get("/", catch_response=True) as response:
-            if response.status_code == 200:
-                response.success()
-            else:
-                response.failure(f"Status check failed: {response.status_code}")
+        common_classes = set(train_class_map) & set(valid_class_map)
+        if not common_classes:
+            print("No common class folders in train and valid.")
+            return
 
-# Event listeners for better monitoring
-@events.test_start.add_listener
-def on_test_start(environment, **kwargs):
-    """Called when the test starts"""
-    print("FarmSmart Load Test Starting...")
-    print(f"Target: {environment.host}")
-    print(f"Users: {environment.runner.user_count if environment.runner else 'N/A'}")
+        selected_class = random.choice(list(common_classes))
+        train_imgs = train_class_map[selected_class]
+        valid_imgs = valid_class_map[selected_class]
 
-@events.test_stop.add_listener
-def on_test_stop(environment, **kwargs):
-    """Called when the test stops"""
-    print("FarmSmart Load Test Completed!")
+        if len(train_imgs) < 5 or len(valid_imgs) < 5:
+            print(f"Class '{selected_class}' has insufficient images.")
+            return
 
-# Configuration for different test scenarios
-class QuickTest(FarmSmartUser):
-    """Quick test with minimal load"""
-    wait_time = between(1, 3)
-    
-    @task(1)
-    def quick_prediction(self):
-        """Quick prediction test"""
-        self.predict_image()
+        class_name = f"{selected_class}_{random.randint(1000, 9999)}"
+        data = {"class_name": class_name}
 
-class StressTest(FarmSmartUser):
-    """Stress test with high load"""
-    wait_time = between(0.5, 2)
-    
-    @task(10)
-    def stress_prediction(self):
-        """High-frequency prediction requests"""
-        self.predict_image()
+        files = []
+        for i in range(5):
+            with open(train_imgs[i], "rb") as t_img, open(valid_imgs[i], "rb") as v_img:
+                train_filename = f"{selected_class}_train_{i}.jpg"
+                valid_filename = f"{selected_class}_valid_{i}.jpg"
+                files.append(("train_images", (train_filename, t_img.read(), "image/jpeg")))
+                files.append(("valid_images", (valid_filename, v_img.read(), "image/jpeg")))
 
-# Usage Instructions:
-"""
-To run load tests:
-
-1. Start the FarmSmart application:
-   python src/app.py
-
-2. Run basic load test:
-   locust -f src/locustfile.py --host=http://localhost:5000
-
-3. Run stress test:
-   locust -f src/locustfile.py --host=http://localhost:5000 --users=50 --spawn-rate=5
-
-4. Run quick test:
-   locust -f src/locustfile.py --host=http://localhost:5000 --users=10 --spawn-rate=2
-
-5. Open browser and go to http://localhost:8089 to view results
-
-Test Scenarios:
-- Homepage visits (most common)
-- Image predictions (core functionality)
-- Static file serving (performance)
-- Retraining requests (less frequent)
-- Admin monitoring (different user type)
-"""
+        with self.client.post("/custom-retrain", data=data, files=files, catch_response=True) as response:
+            try:
+                result = response.json()
+                print("Retrain response:", result)
+                if response.status_code == 200 and "message" in result:
+                    response.success()
+                else:
+                    response.failure(f"Retraining failed or incomplete: {result}")
+            except Exception as e:
+                response.failure(f"Retrain JSON error: {e}")

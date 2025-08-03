@@ -591,47 +591,6 @@ class PlantDiseaseCNN:
         return results
     
 
-# Legacy functions for backward compatibility
-def get_vgg16_feature_extractor(img_size=(128, 128)):
-    """Legacy function - kept for backward compatibility"""
-    from tensorflow.keras.applications.vgg16 import VGG16
-    from tensorflow.keras.models import Model
-    base_model = VGG16(weights='imagenet', include_top=False, input_shape=img_size + (3,))
-    feature_model = Model(inputs=base_model.input, outputs=base_model.output)
-    return feature_model
-
-def extract_features(feature_model, generator):
-    """Legacy function - kept for backward compatibility"""
-    features = feature_model.predict(generator, verbose=1)
-    features_flattened = features.reshape(features.shape[0], -1)
-    labels = generator.classes
-    return features_flattened, labels
-
-def train_logistic_regression(X_train, y_train, max_iter=1000, C=1.0, solver='liblinear'):
-    """Legacy function - kept for backward compatibility"""
-    from sklearn.linear_model import LogisticRegression
-    clf = LogisticRegression(max_iter=max_iter, C=C, solver=solver)
-    clf.fit(X_train, y_train)
-    return clf
-
-def evaluate_logistic_regression(clf, X_test, y_test):
-    """Legacy function - kept for backward compatibility"""
-    y_pred = clf.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred, average='weighted')
-    report = classification_report(y_test, y_pred)
-    cm = confusion_matrix(y_test, y_pred)
-    return {'accuracy': acc, 'f1_score': f1, 'report': report, 'confusion_matrix': cm}
-
-def save_sklearn_model(model, path):
-    """Legacy function - kept for backward compatibility"""
-    joblib.dump(model, path)
-
-def load_sklearn_model(path):
-    """Legacy function - kept for backward compatibility"""
-    return joblib.load(path)
-
-# Run verification when module is imported
 if __name__ == "__main__":
     print("Starting full training pipeline for FarmSmart Disease Classifier")
 
