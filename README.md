@@ -126,6 +126,34 @@ Go to `http://localhost:8089` to simulate user traffic and view response stats.
 
 ---
 
+# Using the Web UI
+
+Access the dashboard in your browser:  
+http://localhost:5000
+
+## Predict Plant Disease
+
+- Click **"Predict Plant Disease"**  
+- Upload a plant image (JPG, PNG, or BMP)  
+- Click **"Predict Disease"**  
+- View the predicted class and confidence score below the form
+
+## Retrain with Custom Images
+
+- Click **"Retrain with Custom Images"**  
+- Choose a **Retraining Mode**:
+  - **Use Existing Dataset** *(no uploads required)*  
+  - **Upload New Disease Class**, then:
+    - Enter a class name (e.g., `Tomato_Blight`)  
+    - Upload at least:
+      - 10 training images  
+      - 5 validation images  
+- Click **"Retrain Model"**  
+- A retraining status message will appear showing progress
+
+![FarmSmart UI](image-4.png)
+
+
 ## Features
 
 ### Prediction
