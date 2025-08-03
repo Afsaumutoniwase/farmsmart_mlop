@@ -116,7 +116,8 @@ def retrain_model_with_fixed_data():
 
             print("Evaluating...")
             val_loss, val_acc, val_prec, val_recall = model.evaluate(val_data, verbose=0)
-            model.save(MODEL_PATH)
+            model.save(os.path.join(MODEL_DIR, 'farmsmart_retrained.keras'))
+
 
             print(f"Retraining completed successfully! Accuracy: {val_acc:.4f}")
             return f"Model retrained. Val Accuracy: {val_acc:.2%}"

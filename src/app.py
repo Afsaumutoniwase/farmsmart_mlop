@@ -66,6 +66,8 @@ def predict():
     try:
         results = predict_image(MODEL_PATH, CLASS_NAMES, image_path)
         top_result = results[0] if results else {}
+        print(f" Raw prediction results: {results}")
+
 
         if top_result:
             conn = sqlite3.connect('farmsmart.db')
@@ -87,7 +89,7 @@ def custom_retrain():
     train_files = request.files.getlist("train_images")
     valid_files = request.files.getlist("valid_images")
 
-    conn = sqlite3.connect('farmsmart.db')
+    conn = sqlite3.connect('../farmsmart.db')
     c = conn.cursor()
     retrain_id = None
 

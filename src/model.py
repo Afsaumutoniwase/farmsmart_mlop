@@ -17,11 +17,9 @@ import joblib
 import json
 from datetime import datetime
 import warnings
-# from preprocessing import get_train_valid_generators
-# from prediction import predict_image
-from .preprocessing import get_train_valid_generators
-from .prediction import predict_image
 
+from preprocessing import * 
+from prediction import *
 
 warnings.filterwarnings('ignore')
 

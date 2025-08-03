@@ -85,21 +85,239 @@
       </div>
     </div>
   </div>
+    <!-- Additional Info in 2 Columns -->
+    <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- System & Supported Classes -->
+      <div class="space-y-6">
+        <!-- System Information -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold mb-4 text-gray-800">System Information</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Model Status:</span>
+              <span class="font-semibold text-green-600">Active</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Supported Classes:</span>
+              <span class="font-semibold">7</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Image Format:</span>
+              <span class="font-semibold">JPG, PNG, BMP</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600">Model Type:</span>
+              <span class="font-semibold">CNN</span>
+            </div>
+          </div>
+        </div>
 
-  <script>
+        <!-- Supported Classes -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold mb-4 text-gray-800">Supported Plant Diseases</h3>
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+              <span>Pepper Bacterial Spot</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              <span>Pepper Healthy</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              <span>Strawberry Healthy</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+              <span>Strawberry Leaf Scorch</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+              <span>Tomato Healthy</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+              <span>Tomato Late Blight</span>
+            </div>
+            <div class="flex items-center">
+              <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+              <span>Tomato Target Spot</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions & Tips -->
+      <div class="space-y-6">
+        <!-- General Usage -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <h3 class="text-lg font-semibold mb-4 text-gray-800">How to Use</h3>
+          <div class="space-y-2 text-sm text-gray-700">
+            <p>1. <strong>Upload Image:</strong> Click the upload area and select a plant image.</p>
+            <p>2. <strong>Predict:</strong> Click "Predict Disease" to analyze the image.</p>
+            <p>3. <strong>View Results:</strong> See the top prediction with confidence score.</p>
+            <p>4. <strong>Retrain:</strong> Upload new images to improve the model.</p>
+          </div>
+        </div>
+
+        <!-- Retraining Instructions -->
+        <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+          <h3 class="text-lg font-semibold mb-4 text-yellow-800">Retraining Tips</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-yellow-700">
+            <div>
+              <p><strong>Training:</strong> Upload 10+ images of the same disease.</p>
+              <p><strong>Validation:</strong> Upload 5+ different images of the same class.</p>
+            </div>
+            <div>
+              <p><strong>Class Name:</strong> Use clear labels like <em>Tomato_New_Disease</em>.</p>
+              <p><strong>Auto Sorting:</strong> Images will be organized into folders.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+<script>
+  feather.replace();
+
+  // Toggle input fields for new class
+  document.getElementById('retrain-option').addEventListener('change', function () {
+    const value = this.value;
+    const newFields = document.getElementById('new-class-fields');
+    if (value === 'new') {
+      newFields.classList.remove('hidden');
+      newFields.querySelectorAll('input').forEach(input => input.required = true);
+    } else {
+      newFields.classList.add('hidden');
+      newFields.querySelectorAll('input').forEach(input => input.required = false);
+    }
+  });
+
+  // Handle retrain form submission
+  document.getElementById('retrain-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const retrainMode = formData.get("retrain_mode");
+    const className = formData.get("class_name")?.trim();
+
+    const retrainBtn = form.querySelector('button[type="submit"]');
+    retrainBtn.disabled = true;
+    retrainBtn.innerHTML = `<i data-feather="refresh-cw" class="w-4 h-4 inline mr-2"></i> Retraining...`;
     feather.replace();
 
-    document.getElementById('retrain-option').addEventListener('change', function () {
-      const value = this.value;
-      const newFields = document.getElementById('new-class-fields');
-      if (value === 'new') {
-        newFields.classList.remove('hidden');
-        newFields.querySelectorAll('input').forEach(input => input.required = true);
+    const resultBox = document.getElementById('retrain-result');
+    const resultContent = document.getElementById('retrain-content');
+    resultBox.classList.remove('hidden');
+
+    if (retrainMode === "existing") {
+      resultContent.innerHTML = ` Retraining in progress... retraining on two new diseases`;
+    } else if (retrainMode === "new" && className) {
+      resultContent.innerHTML = ` Retraining in progress... retraining on ${className}`;
+    } else {
+      resultContent.innerHTML = ` Retraining in progress...`;
+    }
+
+    try {
+      const response = await fetch('/custom-retrain', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        resultContent.innerHTML = `${data.message}`;
       } else {
-        newFields.classList.add('hidden');
-        newFields.querySelectorAll('input').forEach(input => input.required = false);
+        resultContent.innerHTML = `Error: ${data.error || 'Unknown error'}`;
       }
-    });
-  </script>
+    } catch (err) {
+      resultContent.innerHTML = `Network error: ${err.message}`;
+    } finally {
+      retrainBtn.disabled = false;
+      retrainBtn.innerHTML = `<i data-feather="refresh-cw" class="w-4 h-4 inline mr-2"></i> Retrain Model`;
+      feather.replace();
+    }
+  });
+
+  // Predict: preview uploaded image + enable button
+  const imageInput = document.getElementById("image-input");
+  const predictForm = document.getElementById("predict-form");
+  const predictButton = predictForm.querySelector('button[type="submit"]');
+
+  // Disable predict button initially
+  predictButton.disabled = true;
+
+  imageInput.addEventListener("change", () => {
+    const label = imageInput.nextElementSibling;
+    const file = imageInput.files[0];
+
+    if (file) {
+      label.innerHTML = `
+        <img src="${URL.createObjectURL(file)}" alt="Preview" class="mx-auto mb-2 max-h-40 rounded">
+        <p class="text-sm text-gray-700">${file.name}</p>
+      `;
+      predictButton.disabled = false;
+    } else {
+      label.innerHTML = `
+        <i data-feather="upload" class="w-8 h-8 mx-auto text-gray-400 mb-2"></i>
+        <p class="text-sm text-gray-600">Click to upload plant image</p>
+        <p class="text-xs text-gray-500 mt-1">Supports JPG, PNG, BMP</p>
+      `;
+      feather.replace();
+      predictButton.disabled = true;
+    }
+  });
+
+  // Handle prediction form
+  document.getElementById("predict-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const formData = new FormData(form);
+    const predictBtn = form.querySelector('button[type="submit"]');
+    const resultBox = document.getElementById('predict-result');
+    const resultContent = document.getElementById('prediction-content');
+
+    // Show loader
+    resultBox.classList.remove("hidden");
+    resultContent.innerHTML = `Predicting disease...`;
+    predictBtn.disabled = true;
+    predictBtn.innerHTML = `<i data-feather="search" class="w-4 h-4 inline mr-2"></i> Predicting...`;
+    feather.replace();
+
+    try {
+      const response = await fetch("/predict", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+          const top = data.top_prediction;
+          const others = data.all_predictions.slice(1, 3);  // optional
+
+          resultContent.innerHTML = `
+            <p><strong>Prediction:</strong> ${top.class}</p>
+            <p><strong>Confidence:</strong> ${(top.confidence * 100).toFixed(2)}%</p>
+            <hr class="my-2">
+            
+          `;
+
+      } else {
+        resultContent.innerHTML = `Error: ${data.error || "Something went wrong"}`;
+      }
+    } catch (err) {
+      resultContent.innerHTML = ` Network error: ${err.message}`;
+    } finally {
+      predictBtn.disabled = false;
+      predictBtn.innerHTML = `<i data-feather="search" class="w-4 h-4 inline mr-2"></i> Predict Disease`;
+      feather.replace();
+    }
+  });
+</script>
+
+
+
 </body>
 </html>
