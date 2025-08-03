@@ -1,6 +1,5 @@
 # FarmSmart Disease Classifier
 
-**African Leadership University**  
 **Afsa Umutoniwase**
 
 ---
