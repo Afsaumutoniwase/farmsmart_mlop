@@ -1,8 +1,7 @@
-# 🌾 FarmSmart Disease Classifier
+# FarmSmart Disease Classifier
 
 **African Leadership University**  
-**Bachelor of Software Engineering (BSE)**  
-**Machine Learning Pipeline - Summative Assignment**
+**Afsa Umutoniwase**
 
 ---
 
