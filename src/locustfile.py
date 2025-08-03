@@ -9,24 +9,14 @@ class FarmSmartUser(HttpUser):
     wait_time = between(2, 5)
 
     def on_start(self):
-        """Load test images from dataset/test and dataset/valid."""
-        
-        self.test_images = self._find_images("../dataset/retrain/train")
-        self.valid_images = self._find_images("../dataset/retrain/valid")
+        self.train_dir = "../dataset/retrain/train"
+        self.valid_dir = "../dataset/retrain/valid"
+        self.train_class_map = self._group_images_by_class(self.train_dir)
+        self.valid_class_map = self._group_images_by_class(self.valid_dir)
+        self.common_classes = list(set(self.train_class_map) & set(self.valid_class_map))
+        self.all_test_images = [img for imgs in self.train_class_map.values() for img in imgs]
 
-
-    def _find_images(self, directory):
-        if not os.path.exists(directory):
-            return []
-
-        extensions = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
-        images = []
-        for ext in extensions:
-            images.extend(Path(directory).rglob(ext))  # Use rglob instead of glob
-        return list(images)
-    
     def _group_images_by_class(self, directory):
-        """Group images by class folder (e.g. retrain/train/class_x/*.jpg)."""
         class_map = {}
         root = Path(directory)
         if not root.exists():
@@ -41,11 +31,8 @@ class FarmSmartUser(HttpUser):
                     class_map[class_dir.name] = images
         return class_map
 
-
-
     @task(1)
     def visit_homepage(self):
-        """Simulate visiting the homepage."""
         with self.client.get("/", catch_response=True) as response:
             if response.status_code == 200:
                 response.success()
@@ -54,11 +41,10 @@ class FarmSmartUser(HttpUser):
 
     @task(3)
     def predict_image(self):
-        """Simulate image prediction (1 image only)"""
-        if not self.test_images:
+        if not self.all_test_images:
             return
 
-        image_path = random.choice(self.test_images)
+        image_path = random.choice(self.all_test_images)
         mime_type = 'image/png' if image_path.suffix.lower() == '.png' else 'image/jpeg'
 
         with open(image_path, 'rb') as img:
@@ -75,38 +61,20 @@ class FarmSmartUser(HttpUser):
 
     @task(2)
     def retrain_model(self):
-        """Simulate retraining using 5+ train and 5+ valid images from a single class."""
-        train_class_map = self._group_images_by_class("../dataset/retrain/train")
-        valid_class_map = self._group_images_by_class("../dataset/retrain/valid")
-
-        common_classes = set(train_class_map) & set(valid_class_map)
-        if not common_classes:
-            print("No common class folders in train and valid.")
+        if not self.common_classes:
+            print("No common classes in train/valid")
             return
 
-        selected_class = random.choice(list(common_classes))
-        train_imgs = train_class_map[selected_class]
-        valid_imgs = valid_class_map[selected_class]
+        selected_class = random.choice(self.common_classes)
 
-        if len(train_imgs) < 5 or len(valid_imgs) < 5:
-            print(f"Class '{selected_class}' has insufficient images.")
-            return
+        data = {
+            "class_name": selected_class,
+            "retrain_mode": "existing"
+        }
 
-        class_name = f"{selected_class}_{random.randint(1000, 9999)}"
-        data = {"class_name": class_name}
-
-        files = []
-        for i in range(5):
-            with open(train_imgs[i], "rb") as t_img, open(valid_imgs[i], "rb") as v_img:
-                train_filename = f"{selected_class}_train_{i}.jpg"
-                valid_filename = f"{selected_class}_valid_{i}.jpg"
-                files.append(("train_images", (train_filename, t_img.read(), "image/jpeg")))
-                files.append(("valid_images", (valid_filename, v_img.read(), "image/jpeg")))
-
-        with self.client.post("/custom-retrain", data=data, files=files, catch_response=True) as response:
+        with self.client.post("/custom-retrain", data=data, catch_response=True) as response:
             try:
                 result = response.json()
-                print("Retrain response:", result)
                 if response.status_code == 200 and "message" in result:
                     response.success()
                 else:

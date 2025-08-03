@@ -1,221 +1,126 @@
-
-
-# === Enhanced Retraining Module with Individual Image Upload ===
+# === Retraining Module with Fixed Dataset Paths ===
 import os
-import zipfile
-import tarfile
 import shutil
-import tempfile
 from datetime import datetime
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-import numpy as np
-from werkzeug.utils import secure_filename
+from tensorflow.keras import layers, models
+# Add at the top of retrain.py
+import threading
+RETRAIN_LOCK = threading.Lock()
 
+# Paths
+TRAIN_DIR = "../dataset/retrain/train"
+VALID_DIR = "../dataset/retrain/valid"
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "models"))
-model_path = os.path.join(MODEL_DIR, "farmsmart.keras")
-def extract_archive(archive_path, extract_to):
-    """Extract ZIP, TAR, or GZ files"""
-    if archive_path.endswith('.zip'):
-        with zipfile.ZipFile(archive_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
-    elif archive_path.endswith('.tar') or archive_path.endswith('.tar.gz'):
-        with tarfile.open(archive_path, 'r:*') as tar_ref:
-            tar_ref.extractall(extract_to)
-    else:
-        raise ValueError(f"Unsupported archive format: {archive_path}")
+MODEL_PATH = os.path.join(MODEL_DIR, "farmsmart.keras")
 
 def validate_dataset_structure(data_path):
-    """Validate that the dataset has proper class folder structure"""
     if not os.path.exists(data_path):
         return False, "Data path does not exist"
-    
-    # Check for class folders
-    class_folders = [d for d in os.listdir(data_path) 
-                    if os.path.isdir(os.path.join(data_path, d))]
-    
+
+    class_folders = [d for d in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, d))]
     if len(class_folders) == 0:
         return False, "No class folders found"
-    
-    # Check each class folder for images
+
     total_images = 0
     for class_folder in class_folders:
         class_path = os.path.join(data_path, class_folder)
-        images = [f for f in os.listdir(class_path) 
-                 if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
+        images = [f for f in os.listdir(class_path) if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp'))]
         total_images += len(images)
-        
-        if len(images) < 5:  # Minimum 5 images per class
+
+        if len(images) < 5:
             return False, f"Class '{class_folder}' has only {len(images)} images (minimum 5 required)"
-    
-    if total_images < 15:  # Minimum 15 total images
+
+    if total_images < 15:
         return False, f"Total images ({total_images}) is below minimum requirement (15)"
-    
+
     return True, f"Valid dataset with {len(class_folders)} classes and {total_images} images"
 
-def organize_uploaded_images(train_files, valid_files, class_name):
-    """Organize uploaded individual images into proper folder structure"""
-    print(f"Organizing uploaded images for class: {class_name}")
-    
-    # Create directories
-    train_dir = os.path.join("data/custom/train", class_name)
-    valid_dir = os.path.join("data/custom/valid", class_name)
-    os.makedirs(train_dir, exist_ok=True)
-    os.makedirs(valid_dir, exist_ok=True)
-    
-    # Save training images
-    train_count = 0
-    for file in train_files:
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(train_dir, filename)
-            file.save(file_path)
-            train_count += 1
-    
-    # Save validation images
-    valid_count = 0
-    for file in valid_files:
-        if file and file.filename:
-            filename = secure_filename(file.filename)
-            file_path = os.path.join(valid_dir, filename)
-            file.save(file_path)
-            valid_count += 1
-    
-    print(f"Organized {train_count} training images and {valid_count} validation images")
-    return train_dir, valid_dir
+def retrain_model_with_fixed_data():
+    with RETRAIN_LOCK:
 
-def retrain_model_with_individual_images(train_files, valid_files, class_name):
-    """Retrain model with individually uploaded images"""
-    
-    print(f"Starting retraining with individual images for class: {class_name}")
-    
-    try:
-        # Organize uploaded images into folders
-        train_dir, valid_dir = organize_uploaded_images(train_files, valid_files, class_name)
-        
-        # Validate the organized dataset
-        print("Validating organized dataset...")
-        train_valid, train_msg = validate_dataset_structure("data/custom/train")
-        if not train_valid:
-            raise ValueError(f"Training dataset validation failed: {train_msg}")
-        
-        valid_valid, valid_msg = validate_dataset_structure("data/custom/valid")
-        if not valid_valid:
-            raise ValueError(f"Validation dataset validation failed: {valid_msg}")
-        
-        print("Dataset validation successful!")
-        
-        # Load existing model
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model not found at {model_path}")
-        
-        print("Loading existing model...")
-        model = tf.keras.models.load_model(model_path)
-        
-        # Prepare data generators
-        print("Setting up data generators...")
-        train_datagen = ImageDataGenerator(
-            rescale=1./255,
-            rotation_range=20,
-            width_shift_range=0.2,
-            height_shift_range=0.2,
-            shear_range=0.2,
-            zoom_range=0.2,
-            horizontal_flip=True,
-            fill_mode='nearest'
-        )
-        
-        val_datagen = ImageDataGenerator(rescale=1./255)
-        
-        # Create generators
-        train_generator = train_datagen.flow_from_directory(
-            "data/custom/train",
-            target_size=(224, 224),
-            batch_size=32,
-            class_mode='categorical',
-            shuffle=True
-        )
-        
-        val_generator = val_datagen.flow_from_directory(
-            "data/custom/valid",
-            target_size=(224, 224),
-            batch_size=32,
-            class_mode='categorical',
-            shuffle=False
-        )
-        
-        print(f"Training samples: {train_generator.samples}")
-        print(f"Validation samples: {val_generator.samples}")
-        
-        # Compile model for retraining
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
-            loss='categorical_crossentropy',
-            metrics=['accuracy', 'precision', 'recall']
-        )
-        
-        # Callbacks for retraining
-        callbacks = [
-            tf.keras.callbacks.EarlyStopping(
-                monitor='val_accuracy',
-                patience=5,
-                restore_best_weights=True,
-                verbose=1
-            ),
-            tf.keras.callbacks.ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.5,
-                patience=3,
-                verbose=1
-            ),
-            tf.keras.callbacks.ModelCheckpoint(
-                filepath='../models/farmsmart_retrained.keras',
-                monitor='val_accuracy',
-                save_best_only=True,
-                verbose=1
+        print("Starting retraining using fixed folders")
+        try:
+            # Validate dataset structure
+            for path, name in [(TRAIN_DIR, "Training"), (VALID_DIR, "Validation")]:
+                is_valid, msg = validate_dataset_structure(path)
+                if not is_valid:
+                    raise ValueError(f"{name} dataset invalid: {msg}")
+
+            if not os.path.exists(MODEL_PATH):
+                raise FileNotFoundError(f"Model not found at {MODEL_PATH}")
+
+            print("Loading original model...")
+            original_model = tf.keras.models.load_model(MODEL_PATH)
+
+            print("Setting up dummy input...")
+            dummy_input = tf.keras.Input(shape=(128, 128, 3))
+
+            try:
+                _ = original_model(dummy_input)
+            except Exception:
+                original_model.build(input_shape=(None, 128, 128, 3))
+
+            print("Cloning model for retraining...")
+            cloned_model = tf.keras.models.clone_model(original_model)
+            cloned_model.build(input_shape=(None, 128, 128, 3))
+            cloned_model.set_weights(original_model.get_weights())
+
+            print("Setting up data generators...")
+            train_gen = ImageDataGenerator(
+                rescale=1. / 255, rotation_range=20, width_shift_range=0.2,
+                height_shift_range=0.2, shear_range=0.2, zoom_range=0.2,
+                horizontal_flip=True, fill_mode='nearest')
+            val_gen = ImageDataGenerator(rescale=1. / 255)
+
+            train_data = train_gen.flow_from_directory(
+                TRAIN_DIR, target_size=(128, 128), batch_size=32,
+                class_mode='categorical', shuffle=True)
+            val_data = val_gen.flow_from_directory(
+                VALID_DIR, target_size=(128, 128), batch_size=32,
+                class_mode='categorical', shuffle=False)
+
+            num_classes = train_data.num_classes
+            print(f"Detected {num_classes} output classes")
+
+            print("Preparing new final layer...")
+            if isinstance(cloned_model, tf.keras.Sequential):
+                model = tf.keras.Sequential(name="retrained_sequential_model")
+                for layer in cloned_model.layers[:-1]:
+                    model.add(layer)
+                model.add(tf.keras.layers.Dense(num_classes, activation="softmax", name=f"output_dense_{num_classes}"))
+            else:
+                base_output = cloned_model.layers[-2].output
+                new_output = tf.keras.layers.Dense(num_classes, activation='softmax', name=f"output_dense_{num_classes}")(base_output)
+                model = tf.keras.Model(inputs=cloned_model.input, outputs=new_output, name="retrained_model")
+
+            print("Compiling model...")
+            model.compile(
+                optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
+                loss='categorical_crossentropy',
+                metrics=['accuracy', 'precision', 'recall']
             )
-        ]
-        
-        # Retrain the model
-        print("Starting model retraining...")
-        history = model.fit(
-            train_generator,
-            epochs=10,
-            validation_data=val_generator,
-            callbacks=callbacks,
-            verbose=1
-        )
-        
-        # Evaluate the retrained model
-        print("Evaluating retrained model...")
-        val_loss, val_accuracy, val_precision, val_recall = model.evaluate(val_generator, verbose=0)
-        
-        # Save the retrained model
-        final_model_path = '../models/farmsmart_retrained.keras'
-        model.save(final_model_path)
-        
-        # Create backup of original model
-        backup_path = f'../models/farmsmart_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.keras'
-        if os.path.exists(model_path):
-            shutil.copy2(model_path, backup_path)
-        
-        # Replace original model with retrained version
-        shutil.move(final_model_path, model_path)
-        
-        print(f"Retraining completed successfully!")
-        print(f"  Final validation accuracy: {val_accuracy:.4f}")
-        print(f"  Final validation precision: {val_precision:.4f}")
-        print(f"  Final validation recall: {val_recall:.4f}")
-        print(f"  Model saved to: {model_path}")
-        print(f"  Original model backed up to: {backup_path}")
-        
-        return f"Model retrained successfully! Validation accuracy: {val_accuracy:.2%}"
-        
-    except Exception as e:
-        print(f"Retraining failed: {str(e)}")
-        raise e
 
-def retrain_model(zip_path):
-    """Legacy function for backward compatibility"""
-    return retrain_model_with_individual_images(zip_path, zip_path, "default_class")
+            callbacks = [
+                tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True),
+                tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3),
+                tf.keras.callbacks.ModelCheckpoint(
+                    filepath=os.path.join(MODEL_DIR, 'farmsmart_retrained.keras'),
+                    monitor='val_accuracy', save_best_only=True, verbose=1)
+            ]
+
+            print("Training...")
+            model.fit(train_data, epochs=10, validation_data=val_data, callbacks=callbacks, verbose=1)
+
+            print("Evaluating...")
+            val_loss, val_acc, val_prec, val_recall = model.evaluate(val_data, verbose=0)
+            model.save(MODEL_PATH)
+
+            print(f"Retraining completed successfully! Accuracy: {val_acc:.4f}")
+            return f"Model retrained. Val Accuracy: {val_acc:.2%}"
+
+        except Exception as e:
+            print(f"Retraining failed: {str(e)}")
+            raise e
