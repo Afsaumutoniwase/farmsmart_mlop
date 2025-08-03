@@ -2,7 +2,6 @@
 
 **Afsa Umutoniwase**
 
----
 
 ## Project Overview
 
@@ -16,7 +15,7 @@ FarmSmart Disease Classifier is an end-to-end machine learning pipeline designed
 
 This pipeline demonstrates the **complete ML lifecycle** from data ingestion to deployment on a simulated production server.
 
----
+
 
 ## Objective
 
@@ -29,7 +28,7 @@ To build, evaluate, and deploy a machine learning classifier on **image data**, 
 - Load testing via Locust
 - Upload/retrain functionality
 
----
+
 
 ## Project Structure
 
@@ -66,7 +65,6 @@ FarmSmart/
 │
 ├── farmsmart.db                         ← SQLite DB for predictions & retrain logs
 ```
----
 
 ## Setup Instructions
 
@@ -84,7 +82,7 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
----
+
 
 ## Running the App
 
@@ -181,14 +179,14 @@ Evaluates using:
 - Confusion matrix
 - Per-class bar plots
 
----
+
 
 # Video Demo
 
  [YouTube Demo Link](https://your-demo-link.com)  
 _(Includes both prediction and retraining demonstration)_
 
----
+
 
 # Load Testing with Locust
 To simulate multiple users interacting with the system and monitor performance under load, Locust was used.
@@ -218,7 +216,6 @@ This demonstrates that:
 - The prediction and UI routes scale decently under light concurrent usage.
 - Retraining is resource-heavy and should be throttled or queued in production settings.
 
----
 
 ## Summary
 
