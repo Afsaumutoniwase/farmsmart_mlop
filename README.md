@@ -1,126 +1,203 @@
+
 # FarmSmart Disease Classifier
 
-FarmSmart is a machine learning pipeline that helps identify plant diseases from leaf images using deep learning. It supports prediction, model retraining with new data, and a web UI for seamless interaction.
+**African Leadership University**  
+**Bachelor of Software Engineering (BSE)**  
+**Machine Learning Pipeline - Summative Assignment**
+**Afsa Umutoniwase**
 
+---
 
-## Features
-- ✅ CNN model using Keras with regularization, callbacks, and transfer learning
-- ✅ Preprocessing with advanced augmentation using `ImageDataGenerator`
-- ✅ RESTful API with Flask for prediction and retraining
-- ✅ Retrain pipeline using uploaded ZIP files
-- ✅ User Interface (Flask + HTML) with Tailwind styling
-- ✅ Model Evaluation notebook with Accuracy, Loss, Precision, Recall, F1
-- ✅ Load testing with Locust to simulate concurrent requests
+## Project Overview
 
+FarmSmart Disease Classifier is an end-to-end machine learning pipeline designed to detect plant diseases from images. Built using TensorFlow and Flask, the solution supports:
+
+- Image classification (plant disease prediction)
+- Model evaluation with advanced metrics
+- Custom retraining triggered via UI or API
+- Real-time API deployment with Locust load testing
+- Clear visualization of training and evaluation metrics
+- Full-featured Web UI for non-technical users
+
+This pipeline demonstrates the **complete ML lifecycle** from data ingestion to deployment on a simulated production server.
+
+---
+
+## Objective
+
+To build, evaluate, and deploy a machine learning classifier on **image data**, incorporating:
+
+- A prediction API
+- A retraining trigger
+- Evaluation metrics (accuracy, loss, precision, recall, AUC, F1)
+- UI + Deployment setup
+- Load testing via Locust
+- Upload/retrain functionality
+
+---
 
 ## Project Structure
 
+```
 FarmSmart/
-├── app.py                     # Flask application with UI and API endpoints
-├── locustfile.py              # Load testing file
-├── frontend/
-│   └── index.html             # Web UI template (uses Tailwind CSS)
-├── models/
-│   └── farmsmart_diseases.keras # Trained model
-├── data/
-│   ├── train/                 # Training images
-│   ├── valid/                 # Validation images
-│   └── uploads/               # Uploaded images for prediction
+│
+├── README.md
 ├── notebook/
-│   └── farmsmart_pipeline.ipynb # Model training and evaluation notebook
+│   └── farmsmart_notebook.ipynb         ← Full ML pipeline notebook
+│
 ├── src/
-│   ├── preprocessing.py       # Image generators and augmentations
-│   ├── model.py               # CNN architecture and training logic
-│   ├── prediction.py          # Model prediction logic
-│   ├── retrain.py             # Model retraining logic
-│   └── train_model.py         # Training entrypoint
-└── README.md
+│   ├── app.py                           ← Flask app (API endpoints)
+│   ├── model.py                         ← Model training + evaluation
+│   ├── preprocessing.py                 ← Data loading utilities
+│   ├── prediction.py                    ← Image prediction logic
+│   └── locustfile.py                    ← Load testing script
+│   └── static/
+│       └── logo.png                     ← Web UI assets
+│
+│   └──templates/
+│      └── index.html                    ← HTML UI
+│
+├── dataset/
+│   ├── train/                           ← Training images
+│   ├── valid/                           ← Validation images
+│   ├── test/                            ← Single image test set
+│   └── retrain/                         ← Folder for retrain uploads
+│       ├── train/
+│       └── valid/
+│
+├── models/
+│   └── farmsmart.keras                  ← Saved model file
+│
+│
+├── farmsmart.db                         ← SQLite DB for predictions & retrain logs
 ```
 
+---
 
 ## Setup Instructions
 
+### Requirements
+
+- Python 3.8+
+- TensorFlow
+- Flask
+- Locust
+- matplotlib, seaborn, scikit-learn, etc.
+
+Install dependencies:
+
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/FarmSmart.git
-cd FarmSmart
-
-# Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-
-# Install dependencies
 pip install -r requirements.txt
+```
 
-# Train model (optional)
-python -m src.train_model
+---
 
-# Run the app
+## Running the App
+
+### 1. Train Model (Offline)
+
+```bash
+python src/model.py
+```
+
+This script builds, trains, evaluates, and saves the model (`models/farmsmart.keras`).
+
+### 2. Start Flask API
+
+```bash
+cd src
 python app.py
 ```
 
----
-
-## Prediction
-Send an image file to `/predict` via UI or API.
-
-```
-POST /predict
-Form-Data:
-- image: <your_image.jpg>
-```
-
-## Retraining
-Upload a ZIP file with new train/valid images to trigger retraining.
-
-```
-POST /retrain
-Form-Data:
-- dataset: <your_dataset.zip>
-```
-
-
-
-## Model Evaluation Metrics
-
-| Metric        | Result (sample) |
-|---------------|------------------|
-| Accuracy      | ✅ 0.85+         |
-| Precision     | ✅ 0.84+         |
-| Recall        | ✅ 0.83+         |
-| F1 Score      | ✅ 0.835+        |
-| Top-3 Accuracy| ✅ 0.95+         |
-
-> Detailed plots and results in `notebook/farmsmart_pipeline.ipynb`
+- Navigate to `http://localhost:5000`
 
 ---
 
-## Locust Load Testing
+## Using the Web UI
+
+### Access the Dashboard
+
+Go to `http://localhost:5000` in your browser.
+
+### How to Use
+
+1. **Predict Disease**  
+   - Upload a plant image in JPG/PNG format
+   - Click "Predict Disease"
+   - View predicted class and confidence
+
+2. **Retrain Model**  
+   - Fill in a new class name (e.g., `Tomato_Blight`)
+   - Upload at least **10 training** and **5 validation** images
+   - Click "Retrain Model"
+   - View status after retraining is complete
+
+3. **System Info + Class Summary**  
+   - Shown on the right column in UI
+   - Includes supported image types, class count, and model type
+
+> ![UI Screenshot](![alt text](image.png))
+
+---
+
+## Load Testing with Locust
 
 ```bash
-locust -f locustfile.py
-# Visit http://localhost:8089 to simulate load
+locust -f src/locustfile.py --host=http://localhost:5000
 ```
 
-Tested with 1, 10, 50 users — monitored response times and latency.
+Go to `http://localhost:8089` and simulate user traffic:
+- Predict requests
+- Retrain uploads
+- Homepage visits
+
+---
+
+## Features Summary
+
+### Prediction
+- Single image upload
+- Class label & confidence score
+
+### Retraining
+- New class retraining via UI or API
+- Image count checks (5+ validation, 10+ training)
+- Accuracy recorded to database
+
+### Evaluation Metrics
+- Accuracy, Loss, Precision, Recall
+- AUC, F1, Cohen Kappa, MCC
+- Confusion matrix & bar plots
+
+### Web UI
+- Intuitive upload interface
+- Instant visual feedback
+- Icons and error handling
+
+### Load Testing
+- Scalable Locust test simulation
+- Visual latency/throughput tracking
 
 ---
 
 ## Video Demo
-📺 [YouTube Link](https://your-link.com)
+
+[YouTube Demo Link](https://your-demo-link.com)  
+_(Includes both prediction and retraining demonstration)_
 
 ---
 
-## Deployment (Optional)
-- Hosted on: [Heroku / Render / Azure / etc.]
-- Live URL: `https://farmsmart-demo.com`
+## Results from Load Simulation
 
+- **Users simulated:** 7
+- **Endpoints tested:** `/`, `/predict`, `/custom-retrain`
+- **Response time:** avg 2600ms (predict), retrain varies
+- **Errors handled:** gracefully skipped if data invalid
+> ![UI Screenshot](![alt text](image.png))
 ---
 
-## Contributors
-- **Your Name** – Model & API Engineer
-- **Collaborators** – Frontend & Load Testing
+## Conclusion
 
----
-## License
-MIT License © 2025 African Leadership University
+This project meets all the summative requirements including UI, API, retraining, prediction, cloud deployability, and performance simulation.
+
+It is a complete ML solution built for scale and usability.
